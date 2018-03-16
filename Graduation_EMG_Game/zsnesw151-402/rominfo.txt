@@ -1,0 +1,7 @@
+This is the info for the last game you ran.
+
+File: Super Mario Kart (USA).sfc Header: No
+SUPER MARIO KART          TYPE:DSP-1    
+INTERLEAVED:No               CHKSUM:OK  
+VIDEO:NTSC    BANK:Hi     CRC32:CD80DB86
+                                        
