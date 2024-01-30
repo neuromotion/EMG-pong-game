@@ -1,7 +1,7 @@
 #include <Keyboard.h>
 
 // if this line is not commented out, print messages to serial monitor instead of sending key events
-// #define DEBUG_MODE
+#define DEBUG_MODE
 
 // the number of samples for calibration and baseline
 #define CALIBRATION_BIN_SIZE 1000
@@ -44,6 +44,7 @@ uint8_t low_thresholds[NUM_CHANNELS];
 uint16_t zero_value[NUM_CHANNELS];
 
 // stores one bin of data in loop()
+//uint8_t bin[NUM_CHANNELS] = {0};
 uint16_t bin[NUM_CHANNELS] = {0};
 
 // stores previous state of the key for each channel
@@ -59,18 +60,98 @@ void setup() {
   Serial.begin(115200);
 #else
   Keyboard.begin();
-  Serial.begin(115200);
 #endif
-  pinMode(LED_BUILTIN, OUTPUT);
-  digitalWrite(LED_BUILTIN, LOW);
+  Serial.begin(115200);
+
+  pinMode(13, OUTPUT);
   setbaseline();
   calibrate();
 }
 
 void loop() {
   update_history(average_EMG);
+
   // uncomment one of these 2 functions
   send_sustained_presses_on_off();
+  // send_press_and_release(bin);
+  /*
+    history[n] = map(analogRead(0), 0, 1023, 0, 255);
+    Serial.println(history[n]);
+  */
+}
+
+//void send_sustained_presses(uint8_t* bin){
+//void send_sustained_presses(uint16_t* bin) {
+//  /* if a channel rises above threshold, press corresponding key.
+//     if a channel falls below threshold, release corresponding key. */
+//  for (int c = 0; c < NUM_CHANNELS; c++) {
+//    if (bin[c] > high_thresholds[c]) {
+//      // above threshold
+//      if (!is_pressed[c]) {
+//        // new press
+//        press(keys[c]);
+//        is_pressed[c] = 1;
+//      }
+//    }
+//    else if (bin[c] < low_thresholds[c]) {
+//      // below threshold
+//      if (is_pressed[c]) {
+//        // new release
+//        release(keys[c]);
+//        is_pressed[c] = 0;
+//      }
+//    }
+//  }
+//}
+
+
+void send_sustained_presses() {
+  /* if a channel rises above threshold, press corresponding key.
+     if a channel falls below threshold, release corresponding key. */
+  for (int c = 0; c < NUM_CHANNELS; c++) {
+    if (average_EMG[c] > high_thresholds[c]) {
+      // above threshold
+      if (!is_pressed[c]) {
+        // new press
+        press(keys[c]);
+        is_pressed[c] = 1;
+        #ifdef DEBUG_MODE
+        Serial.print("Channel Pressed: ");
+        Serial.println(c);
+        #endif
+      }
+    }
+    else if (average_EMG[c] < high_thresholds[c]) {
+      // below threshold
+      if (is_pressed[c]) {
+        // new release
+        release(keys[c]);
+        is_pressed[c] = 0;
+        #ifdef DEBUG_MODE
+        Serial.print("Channel Released: ");
+        Serial.println(c);
+        #endif
+      }
+    }
+  }
+//    Serial.print(is_pressed[2]*40);
+//    Serial.print(" ");
+//    Serial.print(average_EMG[2]);
+//    Serial.print(" ");
+//    Serial.print(is_pressed[3]*40);
+//    Serial.print(" ");
+//    Serial.println(average_EMG[3]);
+}
+
+
+void send_press_and_release(uint16_t* bin) {
+  /* if a channel is above threshold, press and immediately release
+     the corresponding key */
+  for (int c = 0; c < NUM_CHANNELS; c++) {
+    if (bin[c] > high_thresholds[c]) {
+      press_and_release(keys[c]);
+    }
+  }
 }
 
 void send_sustained_presses_on_off() {
@@ -104,24 +185,15 @@ void send_sustained_presses_on_off() {
       }
     }
   }
-#ifdef DEBUG_MODE
-// print_readings();
-#endif
+//    Serial.print(is_pressed[2]*40);
+//    Serial.print(" ");
+//    Serial.print(average_EMG[2]);
+//    Serial.print(" ");
+//    Serial.print(is_pressed[3]*40);
+//    Serial.print(" ");
+//    Serial.println(average_EMG[3]);
 }
 
-void print_readings() {
-Serial.print("Channel 0 is pressed:");
-Serial.print(is_pressed[2]*40);
-Serial.print(",");
-Serial.print("Channel 0:");
-Serial.print(average_EMG[0]);
-Serial.print(",");
-Serial.print("Channel 1 is pressed:");
-Serial.print(is_pressed[1]*40);
-Serial.print(",");
-Serial.print("Channel 1:");
-Serial.println(average_EMG[1]);
-}
 void press(char character) {
 #ifdef DEBUG_MODE
   Serial.print("press ");
@@ -129,7 +201,6 @@ void press(char character) {
 #else
   Keyboard.press(character);
 #endif
-digitalWrite(LED_BUILTIN, HIGH);
 }
 
 void release(char character) {
@@ -139,7 +210,6 @@ void release(char character) {
 #else
   Keyboard.release(character);
 #endif
-digitalWrite(LED_BUILTIN, LOW);
 }
 
 void press_and_release(char character) {
@@ -250,9 +320,9 @@ void calibrate() {
 #endif
 
   //Flash LED on board to show that calibration is done
-  digitalWrite(LED_BUILTIN, HIGH);
+  digitalWrite(13, HIGH);
   delay(250);
-  digitalWrite(LED_BUILTIN, LOW);
+  digitalWrite(13, LOW);
 }
 
 
